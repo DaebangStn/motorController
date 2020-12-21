@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ESP8266HTTPClient.h>
+#include <ArduinoJson.h>
 
 
 #ifndef STASSID
@@ -15,7 +16,7 @@ const char * pass = STAPSK;  // your network password
 const char* ntpServerName = "ntp.ubuntu.com";
 String base_addr = "http://192.168.25.3:8000/motor/";
 String MAC;
-String MAC_dummy = String("aac");
+//String MAC_dummy = String("a");
 
 int utc_timestamp;
 int millis_timestamp;
@@ -59,7 +60,7 @@ void setup() {
 
   // register MAC
   HTTPClient http;
-  String url = base_addr + String("register/") + MAC_dummy;
+  String url = base_addr + String("register/") + MAC;
   http.begin(url);
   Serial.println(url);
   Serial.println("Registering controller...");
@@ -73,13 +74,37 @@ void setup() {
 }
 
 
-void loop() {  
-  Serial.println(MAC);
-  //register MAC
- 
-  Serial.println(utc_time());
+void loop() {   
+  int target = update_status(100, 23);
+  Serial.println(target);
   // wait ten seconds before asking for the time again
   delay(10000);
+}
+
+// update status, returns speed_target, -1:error
+int update_status(int speed_data, int duty){
+  StaticJsonDocument<200> doc;
+  String body_up;
+  
+  doc["speed_data"] = speed_data;
+  doc["duty"] = duty;
+  doc["timestamp"] = utc_time();
+  serializeJson(doc, body_up);  
+  Serial.println("POST body");
+  Serial.println(body_up);
+  
+  HTTPClient http;
+  String url = base_addr + String("update/") + MAC;
+  http.begin(url);
+  Serial.println(url);
+  Serial.println("Updating controller...");
+  int httpCode = http.POST(body_up);
+  while(httpCode <= 0){
+    httpCode = http.POST(body_up);
+    Serial.println("Updating failed...");
+    delay(1000);
+  }
+  http.end();  
 }
 
 
