@@ -14,13 +14,10 @@ const char * pass = STAPSK;  // your network password
 
 const char* ntpServerName = "ntp.ubuntu.com";
 String base_addr = "192.168.25.3:8000/motor/";
-
 String MAC;
-String url;
 
 int utc_timestamp;
 int millis_timestamp;
-
 
 void setup() {
   Serial.begin(115200);
@@ -49,12 +46,22 @@ void setup() {
     sprintf(temp, "%x", MAC_arr[i]);
     MAC += temp;
   }
+
+  // register MAC
+  HTTPClient http;
+  String url = base_addr + String("register/") + MAC;
+  http.begin(url);
+  int httpCode = 0;
+  while(httpCode <= 0){
+    Serial.println("Registering controller...");
+    int httpCode = http.GET();
+    delay(1000);
+  }
+  http.end();
 }
 
 
-void loop() {
-  HTTPClient http;
-
+void loop() {  
   Serial.println(MAC);
   //register MAC
  
