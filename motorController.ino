@@ -21,6 +21,9 @@ const char* serverName = "192.168.25.3";
 String serverName_str = String(serverName);
 String MAC;
 
+int utc_timestamp;
+int millis_timestamp;
+
 const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
 
 byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
@@ -82,31 +85,36 @@ void loop() {
   //register MAC
  
 
-  utc();
+  Serial.println(utc_time());
   // wait ten seconds before asking for the time again
   delay(10000);
 }
 
-int utc(void){
+int utc_time(void){
   int timeout = 1000;
   
-  WiFi.hostByName(ntpServerName, timeServerIP);
-  sendNTPpacket(timeServerIP); // send an NTP packet to a time server
-  // wait to see if a reply is available
-  int stamp = millis();
-  int cb = udp.parsePacket();
-  while(!cb && (millis()-stamp) < timeout){
-    cb = udp.parsePacket();
-  }
+  if(!utc_timestamp){
+    WiFi.hostByName(ntpServerName, timeServerIP);
+    // send an NTP packet to a time server
+    sendNTPpacket(timeServerIP); 
+    // wait to see if a reply is available
+    int stamp = millis();
+    int cb = udp.parsePacket();
 
-  if((millis()-stamp) > timeout){
-    Serial.println("ntp connection failed");
-    return 0;    
-  }else{
+    while(!cb && (millis()-stamp) < timeout){
+      cb = udp.parsePacket();
+    }
+
+    if((millis()-stamp) > timeout){
+      Serial.println("ntp connection failed");
+      return 0;    
+    }
+
     Serial.print("packet received, length=");
     Serial.println(cb);
     // We've received a packet, read the data from it
     udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
+    millis_timestamp = millis();
 
     //the timestamp starts at byte 40 of the received packet and is four bytes,
     // or two words, long. First, esxtract the two words:
@@ -118,13 +126,14 @@ int utc(void){
     // Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
     const unsigned long seventyYears = 2208988800UL;
     // subtract seventy years:
-    unsigned long epoch = secsSince1900 - seventyYears;
+    utc_timestamp = (int)(secsSince1900 - seventyYears);
     // print Unix time:
     Serial.print("Unix time = ");
-    Serial.println(epoch);
-
-    return epoch;
+    Serial.println(utc_timestamp);    
   }
+
+  int utc_now = utc_timestamp + millis() - millis_timestamp;
+  return utc_now;
 }
 
 // send an NTP request to the time server at the given address
