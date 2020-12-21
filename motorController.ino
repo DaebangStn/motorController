@@ -8,35 +8,24 @@
 #define STAPSK  "1402018716"
 #endif
 
+
 const char * ssid = STASSID; // your network SSID (name)
 const char * pass = STAPSK;  // your network password
 
-unsigned int localPort = 2390;      // local port to listen for UDP packets
-const uint16_t port_server = 8000;
-
-IPAddress timeServerIP; // time.nist.gov NTP server address
 const char* ntpServerName = "ntp.ubuntu.com";
-const char* serverName = "192.168.25.3";
+String base_addr = "192.168.25.3:8000/motor/";
 
-String serverName_str = String(serverName);
 String MAC;
+String url;
 
 int utc_timestamp;
 int millis_timestamp;
 
-const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
-
-byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
-
-// A UDP instance to let us send and receive packets over UDP
-WiFiUDP udp;
 
 void setup() {
   Serial.begin(115200);
-  Serial.println();
-  Serial.println();
 
-  // We start by connecting to a WiFi network
+  // Connecting to WiFi network
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.mode(WIFI_STA);
@@ -52,11 +41,7 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  Serial.println("Starting UDP");
-  udp.begin(localPort);
-  Serial.print("Local port: ");
-  Serial.println(udp.localPort());
-
+  // get MAC
   uint8_t MAC_arr[6];
   char temp[2];
   WiFi.macAddress(MAC_arr);
@@ -66,29 +51,18 @@ void setup() {
   }
 }
 
+
 void loop() {
-  //get a random server from the pool
-  WiFi.hostByName(ntpServerName, timeServerIP);
-
-  WiFiClient client;
   HTTPClient http;
-
-  if (!client.connect(serverName, port_server)) {
-    Serial.println("connection failed");
-    Serial.println("wait 5 sec...");
-    delay(5000);
-    return;
-  }
-  
 
   Serial.println(MAC);
   //register MAC
  
-
   Serial.println(utc_time());
   // wait ten seconds before asking for the time again
   delay(10000);
 }
+
 
 int utc_time(void){
   int timeout = 1000;
@@ -136,8 +110,20 @@ int utc_time(void){
   return utc_now;
 }
 
+
 // send an NTP request to the time server at the given address
 void sendNTPpacket(IPAddress& address) {
+  int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
+  byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
+  WiFiUDP udp;
+  unsigned int localPort = 2390;      // local port to listen for UDP packets
+  IPAddress timeServerIP; // time.nist.gov NTP server address
+
+  Serial.println("Starting UDP");
+  udp.begin(localPort);
+  Serial.print("Local port: ");
+  Serial.println(udp.localPort());
+
   Serial.println("sending NTP packet...");
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
