@@ -8,6 +8,7 @@
 #define STASSID "SK_WiFiE925"
 #define STAPSK  "1402018716"
 #endif
+#define interruptPin D8
 
 
 const char * ssid = STASSID; // your network SSID (name)
@@ -21,6 +22,8 @@ String MAC;
 int utc_timestamp;
 int millis_timestamp;
 
+unsigned int cnt_hall;
+
 // ntp related variables
 const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
@@ -30,8 +33,15 @@ IPAddress timeServerIP; // time.nist.gov NTP server address
 int utc_timeout = 1000;
 
 
+ICACHE_RAM_ATTR void hall_sense(){
+  cnt_hall++;
+}
+
+
 void setup() {
   Serial.begin(115200);
+  pinMode(interruptPin, INPUT_PULLUP);
+  attachInterrupt(interruptPin, hall_sense, FALLING);
 
   // Connecting to WiFi network
   Serial.print("Connecting to ");
@@ -80,6 +90,7 @@ void loop() {
   // wait ten seconds before asking for the time again
   delay(10000);
 }
+
 
 // update status, returns speed_target, -1:error
 int update_status(int speed_data, int duty){
