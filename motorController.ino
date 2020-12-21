@@ -13,8 +13,9 @@ const char * ssid = STASSID; // your network SSID (name)
 const char * pass = STAPSK;  // your network password
 
 const char* ntpServerName = "ntp.ubuntu.com";
-String base_addr = "192.168.25.3:8000/motor/";
+String base_addr = "http://192.168.25.3:8000/motor/";
 String MAC;
+String MAC_dummy = String("aac");
 
 int utc_timestamp;
 int millis_timestamp;
@@ -58,12 +59,14 @@ void setup() {
 
   // register MAC
   HTTPClient http;
-  String url = base_addr + String("register/") + MAC;
+  String url = base_addr + String("register/") + MAC_dummy;
   http.begin(url);
-  int httpCode = 0;
+  Serial.println(url);
+  Serial.println("Registering controller...");
+  int httpCode = http.GET();
   while(httpCode <= 0){
-    Serial.println("Registering controller...");
-    int httpCode = http.GET();
+    httpCode = http.GET();
+    Serial.println("Registering failed...");
     delay(1000);
   }
   http.end();
