@@ -56,6 +56,14 @@ void setup() {
   udp.begin(localPort);
   Serial.print("Local port: ");
   Serial.println(udp.localPort());
+
+  uint8_t MAC_arr[6];
+  char temp[2];
+  WiFi.macAddress(MAC_arr);
+  for(int i=0; i<sizeof(MAC_arr); i++){
+    sprintf(temp, "%x", MAC_arr[i]);
+    MAC += temp;
+  }
 }
 
 void loop() {
@@ -70,14 +78,6 @@ void loop() {
     Serial.println("wait 5 sec...");
     delay(5000);
     return;
-  }
-
-  uint8_t MAC_arr[6];
-  char temp[2];
-  WiFi.macAddress(MAC_arr);
-  for(int i=0; i<sizeof(MAC_arr); i++){
-    sprintf(temp, "%x", MAC_arr[i]);
-    MAC += temp;
   }
   
 
