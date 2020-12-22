@@ -72,7 +72,7 @@ void setup() {
     sprintf(temp, "%x", MAC_arr[i]);
     MAC += temp;
   }
-/*
+
   // register MAC
   HTTPClient http;
   String url = base_addr + String("register/") + MAC;
@@ -86,7 +86,6 @@ void setup() {
     delay(1000);
   }
   http.end();
-  */
 }
 
 
@@ -97,7 +96,10 @@ void loop(){
   Serial.println("rpm");
   Serial.print(adjust_speed(speed_data, 1000));
   Serial.println("duty");
-  // wait ten seconds before asking for the time again
+
+  Serial.print(update_status(speed_data));
+  Serial.println("http code");
+
   delay(2000);
 }
 
@@ -121,6 +123,14 @@ int adjust_speed(int speed_data, int speed_target){
     duty -= 10;
   }else if(speed_diff>-200){
     duty -= 100;
+  }
+
+  if(duty>1023){
+    Serial.println("target is larger than maximum");
+    duty = 1023;
+  }else if(duty<0){
+    Serial.println("target is smaller than minimum");
+    duty = 0;
   }
 
   analogWrite(pwmPin, duty);
@@ -156,7 +166,7 @@ int tachometer(){
 
 
 // update status, returns speed_target, -1:error
-int update_status(int speed_data, int duty){
+int update_status(int speed_data){
   StaticJsonDocument<200> doc;
   String body_up;
   
