@@ -8,7 +8,7 @@
 #define STASSID "SK_WiFiE925"
 #define STAPSK  "1402018716"
 #endif
-#define interruptPin D8
+#define interruptPin D1
 
 
 const char * ssid = STASSID; // your network SSID (name)
@@ -30,7 +30,7 @@ byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing pack
 WiFiUDP udp;
 unsigned int localPort = 2390;      // local port to listen for UDP packets
 IPAddress timeServerIP; // time.nist.gov NTP server address
-int utc_timeout = 1000;
+int utc_timeout = 2000;
 
 
 ICACHE_RAM_ATTR void hall_sense(){
@@ -40,7 +40,7 @@ ICACHE_RAM_ATTR void hall_sense(){
 
 void setup() {
   Serial.begin(115200);
-  pinMode(interruptPin, INPUT_PULLUP);
+  pinMode(interruptPin, INPUT);
   attachInterrupt(interruptPin, hall_sense, FALLING);
 
   // Connecting to WiFi network
@@ -67,7 +67,7 @@ void setup() {
     sprintf(temp, "%x", MAC_arr[i]);
     MAC += temp;
   }
-
+/*
   // register MAC
   HTTPClient http;
   String url = base_addr + String("register/") + MAC;
@@ -81,14 +81,16 @@ void setup() {
     delay(1000);
   }
   http.end();
+  */
 }
 
 
 void loop() {   
-  int target = update_status(100, 23);
-  Serial.println(target);
+  //int target = update_status(100, 23);
+  Serial.println(cnt_hall);
+  Serial.println(digitalRead(interruptPin));
   // wait ten seconds before asking for the time again
-  delay(10000);
+  delay(1000);
 }
 
 
