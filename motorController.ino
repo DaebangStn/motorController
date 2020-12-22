@@ -9,6 +9,8 @@
 #define STAPSK  "1402018716"
 #endif
 #define interruptPin D1
+#define utc_timeout 2000
+#define tacho_minInterval 1000
 
 
 const char * ssid = STASSID; // your network SSID (name)
@@ -21,6 +23,7 @@ String MAC;
 
 int utc_timestamp;
 int millis_timestamp;
+int tacho_millis;
 
 unsigned int cnt_hall;
 
@@ -30,7 +33,6 @@ byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing pack
 WiFiUDP udp;
 unsigned int localPort = 2390;      // local port to listen for UDP packets
 IPAddress timeServerIP; // time.nist.gov NTP server address
-int utc_timeout = 2000;
 
 
 ICACHE_RAM_ATTR void hall_sense(){
@@ -85,12 +87,39 @@ void setup() {
 }
 
 
-void loop() {   
+void loop(){   
   //int target = update_status(100, 23);
-  Serial.println(cnt_hall);
-  Serial.println(digitalRead(interruptPin));
+  Serial.print(tachometer());
+  Serial.println("rpm");
   // wait ten seconds before asking for the time again
-  delay(1000);
+  delay(4000);
+}
+
+
+// returns in [rpm]
+// when access interval is shorter than tacho_minInterval, returns -1 
+int tachometer(){
+  int tacho_temp = millis();
+  if(tacho_temp - tacho_millis < tacho_minInterval){
+    return -1;
+  }
+
+  int cnt_hall_interval;
+  int tacho_interval;
+  noInterrupts();
+  tacho_interval = millis() - tacho_millis;
+  tacho_millis = millis();
+  cnt_hall_interval = cnt_hall;
+  cnt_hall = 0;
+  interrupts();
+
+  float rpm = (float)cnt_hall_interval / (float)tacho_interval;
+  Serial.print(cnt_hall_interval);
+  Serial.print("/");
+  Serial.println(tacho_interval);
+  rpm = rpm * 7500.0; // rev per ms, 2 fallings per tick, 4 ticks per rev, rpm = rpm / 8.0 && rpm = rpm * 60000.0; // rpm
+
+  return (int)rpm; 
 }
 
 
