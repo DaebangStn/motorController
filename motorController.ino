@@ -8,9 +8,10 @@
 #define STASSID "SK_WiFiE925"
 #define STAPSK  "1402018716"
 #endif
-#define interruptPin D1
+#define interruptPin  D1
+#define pwmPin        D6
 #define utc_timeout 2000
-#define tacho_minInterval 1000
+#define tacho_minInterval 500
 
 
 const char * ssid = STASSID; // your network SSID (name)
@@ -24,8 +25,9 @@ String MAC;
 int utc_timestamp;
 int millis_timestamp;
 int tacho_millis;
-
 unsigned int cnt_hall;
+
+int duty;
 
 // ntp related variables
 const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
@@ -43,6 +45,7 @@ ICACHE_RAM_ATTR void hall_sense(){
 void setup() {
   Serial.begin(115200);
   pinMode(interruptPin, INPUT);
+  pinMode(pwmPin, OUTPUT);
   attachInterrupt(interruptPin, hall_sense, FALLING);
 
   // Connecting to WiFi network
@@ -89,10 +92,39 @@ void setup() {
 
 void loop(){   
   //int target = update_status(100, 23);
-  Serial.print(tachometer());
+  int speed_data = tachometer(); 
+  Serial.print(speed_data);
   Serial.println("rpm");
+  Serial.print(adjust_speed(speed_data, 1000));
+  Serial.println("duty");
   // wait ten seconds before asking for the time again
-  delay(4000);
+  delay(2000);
+}
+
+
+// returns duty
+int adjust_speed(int speed_data, int speed_target){
+  int speed_diff = speed_target - speed_data;
+  if(speed_diff>200){
+    duty += 100;
+  }else if(speed_diff>50){
+    duty += 10;
+  }else if(speed_diff>10){
+    duty += 2;
+  }else if(speed_diff>0){
+    duty += 1;
+  }else if(speed_diff==0){
+    duty += 0;
+  }else if(speed_diff>-10){
+    duty -= 2;
+  }else if(speed_diff>-50){
+    duty -= 10;
+  }else if(speed_diff>-200){
+    duty -= 100;
+  }
+
+  analogWrite(pwmPin, duty);
+  return duty;
 }
 
 
