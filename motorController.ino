@@ -28,6 +28,8 @@ int tacho_millis;
 unsigned int cnt_hall;
 
 int duty;
+int speed_target;
+int mode;
 
 // ntp related variables
 const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
@@ -93,8 +95,10 @@ void loop(){
   //int target = update_status(100, 23);
   int speed_data = tachometer(); 
   Serial.print(speed_data);
-  Serial.println("rpm");
-  Serial.print(adjust_speed(speed_data, 1000));
+  Serial.println("rpm_data");
+  Serial.print(speed_target);
+  Serial.println("rpm_targ");
+  Serial.print(adjust_speed(speed_data));
   Serial.println("duty");
 
   Serial.print(update_status(speed_data));
@@ -105,7 +109,7 @@ void loop(){
 
 
 // returns duty
-int adjust_speed(int speed_data, int speed_target){
+int adjust_speed(int speed_data){
   int speed_diff = speed_target - speed_data;
   if(speed_diff>200){
     duty += 100;
@@ -121,7 +125,7 @@ int adjust_speed(int speed_data, int speed_target){
     duty -= 2;
   }else if(speed_diff>-50){
     duty -= 10;
-  }else if(speed_diff>-200){
+  }else{
     duty -= 100;
   }
 
@@ -188,7 +192,16 @@ int update_status(int speed_data){
     Serial.println("Updating failed...");
     delay(1000);
   }
-  http.end();  
+
+  String res = http.getString();
+  Serial.print(res);
+  Serial.println(" // payload // ");
+  int res_int = res.toInt();
+  mode = res_int % 10;
+  speed_target = res_int / 10;
+  http.end();
+
+  return httpCode;
 }
 
 
